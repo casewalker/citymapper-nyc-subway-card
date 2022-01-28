@@ -2,7 +2,27 @@
   "common": {
     "version": "Version",
     "invalid_configuration": "Invalid configuration",
+    "express": "Express",
+    "express_short": "𝕩",
+    "extrapolated": "Extrapolated",
+    "extrapolated_short": "ⅇ",
+    "minute_short": "min",
+    "minutes_short": "mins",
     "show_warning": "Show Warning",
     "show_error": "Show Error"
+  },
+  "trains": {
+    "station": {
+      "SubwayNostrandAv3": "Nostrand Ave (3)",
+      "SubwayPresidentSt": "President St",
+      "SubwayNostrandAvAC": "Nostrand Ave (A/C)",
+      "SubwayFranklinAv234": "Franklin Ave"
+    },
+    "station_short": {
+      "SubwayNostrandAv3": "Nost. Ave",
+      "SubwayPresidentSt": "Pres. St",
+      "SubwayNostrandAvAC": "Nost. Ave",
+      "SubwayFranklinAv234": "Fr. Ave"
+    }
   }
 }
