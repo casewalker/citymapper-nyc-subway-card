@@ -140,7 +140,7 @@ export class BoilerplateCard extends LitElement {
       const departureObjects: Departure[] = trainsMapping[train];
       if (departureObjects.length > 0) {
 
-        departureObjects.sort((a, b) => (new Date(a.departure)) < (new Date(b.departure)) ? -1 : 1);
+        departureObjects.sort((a, b) => a.departure < b.departure ? -1 : 1);
 
         // Annoying: Have to store previousDetails in order to extrapolate future train times
         // But want to avoid an express train if possible for extrapolation, that may mess the times up
@@ -175,13 +175,13 @@ export class BoilerplateCard extends LitElement {
         });
 
       } else {
-        trainsHtml[train].push(html`<span class="departure nodata">No train data at this time</span>`);
+        trainsHtml[train].push(html`<span class="departure nodata">${localize("common.no_train")}</span>`);
       }
     });
 
     // Put it all together for each train
     const totalHtml: TemplateResult[] = [];
-    Object.keys(trainsMapping).forEach((train, i) => {
+    Object.keys(trainsHtml).forEach((train, i) => {
       const baseHtml = html`
           <div class="train ${train}">
             <span class="image"><img src="trains/${train}.svg" height=20px /></span>
@@ -241,7 +241,7 @@ export class BoilerplateCard extends LitElement {
     minsCountdown.departureTime = departureObject.departure;
     return html`
         <span class="${first ? 'first' : ''} departure">
-          <span class="time" .name="${departureObject.departure}">${this._getTimeStr(departureObject.departure)}</span>
+          <span class="time">${this._getTimeStr(departureObject.departure)}</span>
           ${ minsCountdown }
           <span class="station">${first
             ? localize("trains.station." + departureObject.station)

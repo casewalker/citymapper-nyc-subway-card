@@ -8,6 +8,7 @@
     "extrapolated_short": "ⅇ",
     "minute_short": "min",
     "minutes_short": "mins",
+    "no_train": "No train data at this time",
     "show_warning": "Show Warning",
     "show_error": "Show Error"
   },
