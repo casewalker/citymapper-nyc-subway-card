@@ -93,7 +93,7 @@ export class BoilerplateCard extends LitElement {
 
     console.log("Hello from the citymapper trains card!");
     const trainsMapping = {};
-    this.config.trains_of_interest.forEach(train => trainsMapping[train] = []);
+    this.config.trains_of_interest.forEach(train => trainsMapping[train.toString()] = []);
 
     // For each entity, go through the train schedules and add them to the trainsMapping
     this.config.entities.forEach(entity => {
@@ -103,7 +103,7 @@ export class BoilerplateCard extends LitElement {
         const metroLeg = route["legs"][1];
         if (metroLeg["vehicle_types"].indexOf("metro") > -1) {
 
-          let train = metroLeg.updatable_detail.departures[0].service_id;
+          let train = metroLeg.updatable_detail.departures[0].service_id.toString();
           // Handle express syntax like "5X"
           let express = false;
           if (train.match(/^[A-Z0-9]X$/)) {
@@ -134,7 +134,7 @@ export class BoilerplateCard extends LitElement {
     // Now that each train may have a mapping (or multiple), sort them and extrapolate more train times
     // Then store HTML for each departure in template arrays
     const trainsHtml = {};
-    this.config.trains_of_interest.forEach(train => trainsHtml[train] = []);
+    this.config.trains_of_interest.forEach(train => trainsHtml[train.toString()] = []);
 
     Object.keys(trainsMapping).map((train) => {
       const departureObjects: Departure[] = trainsMapping[train];
@@ -184,7 +184,7 @@ export class BoilerplateCard extends LitElement {
     Object.keys(trainsHtml).forEach((train, i) => {
       const baseHtml = html`
           <div class="train ${train}">
-            <span class="image"><img src="trains/${train}.svg" height=20px /></span>
+            <span class="image"><img src="/local/custom-lovelace/nyc-subway-card/trains/${train}.svg" height=20px /></span>
             <span class="departures-wrapper">
               <span class="departures">
                 ${trainsHtml[train].map((departure) =>
