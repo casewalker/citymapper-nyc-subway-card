@@ -231,7 +231,7 @@ export class BoilerplateCard extends LitElement {
             html`${value}`
           )}
         </div>
-        <div class="legend">${localize("common.extrapolated_short")} = ${localize("common.extrapolated")}, ${localize("common.express_short")} = ${localize("common.express")}</div>
+        <div class="legend">&#8519; = ${localize("common.extrapolated")}, &#120169; = ${localize("common.express")}</div>
       </ha-card>
     `;
   }
@@ -246,8 +246,8 @@ export class BoilerplateCard extends LitElement {
           <span class="station">${first
             ? localize("trains.station." + departureObject.station)
             : localize("trains.station_short." + departureObject.station)}</span>
-          ${departureObject.express ? html`<span class="express">${localize("common.express_short")}</span>` : ''}
-          ${departureObject.extrapolated ? html`<span class="extrapolated">${localize("common.extrapolated_short")}</span>` : ''}
+          ${departureObject.express ? html`<span class="express">&#120169;</span>` : ''}
+          ${departureObject.extrapolated ? html`<span class="extrapolated">&#8519;</span>` : ''}
         </span>
       `;
   }
@@ -287,6 +287,7 @@ export class BoilerplateCard extends LitElement {
         padding-left: 24px;
         padding-top: 20px;
         padding-bottom: 6px;
+        overflow: visible;
       }
       .title {
         position: absolute;
@@ -354,7 +355,7 @@ export class BoilerplateCard extends LitElement {
  * Class to hold the minutes until the train departs, allowing the countdown
  * to be successfully re-rendered every 5 seconds.
  */
-@customElement("mins-countdown")
+@customElement("mins-countdown-cm-subway")
 export class MinsCountdown extends LitElement {
 
   _defaultDeparture = new Date("2020-12-31 23:59:59");
