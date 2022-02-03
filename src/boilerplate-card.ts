@@ -288,6 +288,7 @@ export class BoilerplateCard extends LitElement {
         padding-top: 20px;
         padding-bottom: 6px;
         overflow: visible;
+        fill: var(--primary-text-color);
       }
       .title {
         position: absolute;
