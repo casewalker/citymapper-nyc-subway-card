@@ -46,7 +46,11 @@ export class BoilerplateCard extends LitElement {
   }
 
   public static getStubConfig(): Record<string, unknown> {
-    return {};
+    return {
+      name: "NYC Subway",
+      entities: [],
+      trains_of_interest: ["1","2","3","4","5","6","7", "A","C","E", "B","D","F","M", "G", "L", "J","Z", "N","Q","R","W", "S","T"]
+    };
   }
 
   // TODO Add any properities that should cause your element to re-render here
