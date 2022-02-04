@@ -10,12 +10,10 @@ import {
 import { customElement, property, state } from "lit/decorators";
 import {
   HomeAssistant,
-  hasConfigOrEntityChanged,
   hasAction,
   ActionHandlerEvent,
   handleAction,
   LovelaceCardEditor,
-  getLovelace,
 } from 'custom-card-helpers'; // This is a community maintained npm module with common helper functions/types. https://github.com/custom-cards/custom-card-helpers
 
 import './editor';
@@ -58,16 +56,11 @@ export class BoilerplateCard extends LitElement {
 
   // https://lit.dev/docs/components/properties/#accessors-custom
   public setConfig(config: BoilerplateCardConfig): void {
-    // TODO Check for required fields and that they are of the proper format
     if (!config) {
       throw new Error(localize('common.invalid_configuration'));
     }
-    if (!config.entities || !config.entities[0]) {
+    if (!config.entities || !Array.isArray(config.entities) || !config.entities[0]) {
       throw new Error(localize('common.missing_entites'));
-    }
-
-    if (config.test_gui) {
-      getLovelace().setEditMode(true);
     }
 
     this.config = {
@@ -81,7 +74,25 @@ export class BoilerplateCard extends LitElement {
     if (!this.config) {
       return false;
     }
-    return hasConfigOrEntityChanged(this, changedProps, false);
+
+    if (changedProps.has('config')) {
+      return true;
+    }
+
+    if (this.config.entities) {
+      const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+      if (oldHass) {
+        for (const entity of this.config.entities) {
+          if (Boolean(this.hass && oldHass.states[entity] !== this.hass.states[entity])) {
+            return true;
+          }
+        }
+        return false;
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
   // https://lit.dev/docs/components/rendering/
@@ -92,44 +103,7 @@ export class BoilerplateCard extends LitElement {
     }
 
     console.log("Hello from the citymapper trains card!");
-    const trainsMapping = {};
-    this.config.trains_of_interest.forEach(train => trainsMapping[train.toString()] = []);
-
-    // For each entity, go through the train schedules and add them to the trainsMapping
-    this.config.entities.forEach(entity => {
-      const routes = this.hass.states[entity].attributes["routes"];
-
-      routes.forEach(route => {
-        const metroLeg = route["legs"][1];
-        if (metroLeg["vehicle_types"].indexOf("metro") > -1) {
-
-          let train = metroLeg.updatable_detail.departures[0].service_id.toString();
-          // Handle express syntax like "5X"
-          let express = false;
-          if (train.match(/^[A-Z0-9]X$/)) {
-            train = train.substr(0, 1);
-            express = true;
-          }
-
-          if (trainsMapping[train] && trainsMapping[train].filter((departureObj: Departure) =>
-              departureObj.station == metroLeg.stops[0].id
-              && departureObj.departure_string == metroLeg.updatable_detail.leg_departure_time)
-              .length == 0) {
-            trainsMapping[train].push({
-              station: metroLeg.stops[0].id,
-              departure_string: metroLeg.updatable_detail.leg_departure_time,
-              departure: new Date(metroLeg.updatable_detail.leg_departure_time),
-              frequencies: metroLeg.updatable_detail.departures[0].frequency_seconds_range,
-              express: express,
-              extrapolated: false
-            });
-            console.log("Mapping addded for " + train);
-          } else {
-            console.log("Skipped mapping for train: " + train);
-          }
-        }
-      });
-    });
+    const trainsMapping = this._generateTrainsMapping();
 
     // Now that each train may have a mapping (or multiple), sort them and extrapolate more train times
     // Then store HTML for each departure in template arrays
@@ -151,8 +125,11 @@ export class BoilerplateCard extends LitElement {
           : departureObjects[departureObjects.length - 1];
 
         trainsHtml[train].push(this._getDepartureHtml(departureObjects[0], true));
-        departureObjects.splice(0, 1);
-        departureObjects.forEach(
+
+        // leave departureObjects intact
+        const depObjectsCopy = [...departureObjects];
+        depObjectsCopy.splice(0, 1);
+        depObjectsCopy.forEach(
           departureObject => trainsHtml[train].push(this._getDepartureHtml(departureObject, false))
         );
 
@@ -195,7 +172,7 @@ export class BoilerplateCard extends LitElement {
           </div>
       `;
 
-      if (i < Object.keys(trainsMapping).length - 1) {
+      if (i < Object.keys(trainsHtml).length - 1) {
         totalHtml.push(html`
           ${baseHtml}
           <div class="trains-separator"></div>
@@ -236,6 +213,9 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
+  /**
+   * Generate HTML for each departure for each train.
+   */
   private _getDepartureHtml(departureObject: Departure, first: boolean): any {
     const minsCountdown = new MinsCountdown();
     minsCountdown.departureTime = departureObject.departure;
@@ -252,8 +232,62 @@ export class BoilerplateCard extends LitElement {
       `;
   }
 
+  /**
+   * Get a time string of the form "8:59 PM" from the input Date.
+   */
   private _getTimeStr(date: Date): string {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  /**
+   * Generate the trainsMapping object. The object should contain a key for each
+   * configured "train of interest", then after checking the HASS entity attributes
+   * for departure times linked to any of those trains, have a list of departure
+   * times for each train-key.
+   */
+  private _generateTrainsMapping(): any {
+    const trainsMapping = {};
+    this.config.trains_of_interest.forEach(train => trainsMapping[train.toString()] = []);
+
+    // For each entity, go through the train schedules and add them to the trainsMapping
+    this.config.entities.forEach(entity => {
+      const routes = this.hass.states[entity].attributes["routes"];
+
+      routes.forEach(route => {
+        const metroLeg = route["legs"][1];
+        if (metroLeg["vehicle_types"].indexOf("metro") > -1) {  // subway
+
+          let train = metroLeg.updatable_detail.departures[0].service_id.toString();
+          // Handle express syntax like "5X"
+          let express = false;
+          if (train.match(/^[A-Z0-9]X$/)) {
+            train = train.substr(0, 1);
+            express = true;
+          }
+
+          // Avoid storing duplicate departures
+          if (trainsMapping[train] && trainsMapping[train].filter((departureObj: Departure) =>
+              departureObj.station == metroLeg.stops[0].id
+              && departureObj.departure_string == metroLeg.updatable_detail.leg_departure_time)
+              .length == 0) {
+            trainsMapping[train].push({
+              station: metroLeg.stops[0].id,
+              departure_string: metroLeg.updatable_detail.leg_departure_time,
+              departure: new Date(metroLeg.updatable_detail.leg_departure_time),
+              frequencies: metroLeg.updatable_detail.departures[0].frequency_seconds_range,
+              express: express,
+              extrapolated: false
+            });
+            console.log("Mapping addded for " + train);
+            console.log(trainsMapping[train].at(-1));
+          } else {
+            console.log("Skipped mapping for train: " + train);
+          }
+        }
+      });
+    });
+    console.log(trainsMapping);
+    return trainsMapping;
   }
 
   private _handleAction(ev: ActionHandlerEvent): void {
@@ -352,7 +386,7 @@ export class BoilerplateCard extends LitElement {
   }
 }
 
-/*
+/**
  * Class to hold the minutes until the train departs, allowing the countdown
  * to be successfully re-rendered every 5 seconds.
  */
